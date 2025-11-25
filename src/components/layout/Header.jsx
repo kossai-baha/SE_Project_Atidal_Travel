@@ -10,7 +10,7 @@ const Header = () => {
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Destinations', href: '/destinations' },
-    { name: 'Umrah', href: '#umrah' },
+    { name: 'Umrah', href: '/umrah' },
     { name: 'Group trip', href: '#group-trip' },
     { name: 'Branches', href: '#branches' },
   ];

@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Hotel, User, Phone, Mail, MapPinned, Users, CheckCircle2 } from 'lucide-react';
+import { MapPin, Hotel, User, Phone, Mail, MapPinned, Users, CheckCircle2, Plane, Package, Calendar as CalendarIcon, X } from 'lucide-react';
 import DatePicker from './DatePicker';
 import TimePicker from './TimePicker';
 
-export default function BookingForm() {
+export default function BookingForm({ packageData = null, onClose = null }) {
+  // Determine if this is an Umrah booking
+  const isUmrahBooking = packageData !== null;
+  
   // Step 1 state
-  const [currentStep, setCurrentStep] = useState(1);
-  const [destinationCountry, setDestinationCountry] = useState('');
-  const [destinationCity, setDestinationCity] = useState('');
+  const [currentStep, setCurrentStep] = useState(isUmrahBooking ? 2 : 1);
+  const [destinationCountry, setDestinationCountry] = useState(isUmrahBooking ? 'Saudi Arabia' : '');
+  const [destinationCity, setDestinationCity] = useState(isUmrahBooking ? 'Mecca' : '');
   const [hotelStars, setHotelStars] = useState('');
   const [noHotelNeeded, setNoHotelNeeded] = useState(false);
   const [needsVisaAssistance, setNeedsVisaAssistance] = useState(false);
@@ -99,8 +102,12 @@ export default function BookingForm() {
   const validateStep1 = () => {
     const newErrors = {};
 
-    if (!destinationCountry) newErrors.destinationCountry = 'Please select a destination country';
-    if (!destinationCity) newErrors.destinationCity = 'Please select a destination city';
+    // Only validate country/city if not Umrah booking
+    if (!isUmrahBooking) {
+      if (!destinationCountry) newErrors.destinationCountry = 'Please select a destination country';
+      if (!destinationCity) newErrors.destinationCity = 'Please select a destination city';
+    }
+    
     if (!noHotelNeeded && !hotelStars) newErrors.hotelStars = 'Please select hotel stars or check "I don\'t need hotel"';
     if (!departureDay) newErrors.departureDay = 'Please select a departure date';
     if (!returnDay) newErrors.returnDay = 'Please select a return date';
@@ -202,9 +209,12 @@ export default function BookingForm() {
     e.preventDefault();
     if (validateStep2()) {
       console.log({
+        packageInfo: packageData,
+        destination: {
+          country: destinationCountry,
+          city: destinationCity,
+        },
         step1: {
-          destinationCountry,
-          destinationCity,
           hotelStars,
           noHotelNeeded,
           needsVisaAssistance,
@@ -225,7 +235,8 @@ export default function BookingForm() {
           travelers,
         },
       });
-      alert('Form submitted successfully!');
+      alert(isUmrahBooking ? 'Umrah booking submitted successfully!' : 'Form submitted successfully!');
+      if (onClose) onClose();
     }
   };
 
@@ -266,7 +277,7 @@ export default function BookingForm() {
     }
   };
 
-  const availableCities = destinationCountry 
+  const availableCities = destinationCountry && !isUmrahBooking
     ? destinations[destinationCountry]?.cities || []
     : Object.values(destinations).flatMap(country => country.cities);
 
@@ -293,33 +304,66 @@ export default function BookingForm() {
     }
   };
 
-  return (
+  // Wrapper component - conditionally renders modal or normal form
+  const FormContent = () => (
     <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16">
       {/* Header Section */}
       <div className="text-center mb-12">
-        <h1 className="text-gray-800 mb-3">Destination Booking Form</h1>
-        <p className="text-gray-600 mb-8">Plan your perfect getaway with us</p>
+        <h1 className="text-gray-800 mb-3">
+          {isUmrahBooking ? 'Umrah Booking Form' : 'Destination Booking Form'}
+        </h1>
+        <p className="text-gray-600 mb-8">
+          {isUmrahBooking ? 'Complete your spiritual journey booking' : 'Plan your perfect getaway with us'}
+        </p>
         
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <div className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              currentStep === 1 ? 'bg-[#117BB8] text-white shadow-lg' : 'bg-white text-[#117BB8] border-2 border-[#117BB8]'
-            }`}>
-              {currentStep > 1 ? <CheckCircle2 className="w-6 h-6" /> : '1'}
+        {/* Package Information Display - Only for Umrah */}
+        {isUmrahBooking && packageData && (
+          <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 mb-8">
+            <div className="flex flex-col gap-4">
+              {/* Umrah Label */}
+              <div className="flex items-center justify-center gap-2 bg-[#f1f9fe] rounded-xl px-4 py-3">
+                <Plane className="w-5 h-5 text-[#495057]" />
+                <p className="text-[#495057]">Umrah</p>
+              </div>
+              
+              {/* Package Type and Dates */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="flex items-center justify-center gap-2 bg-[#f1f9fe] rounded-xl px-4 py-3">
+                  <Package className="w-5 h-5 text-[#495057]" />
+                  <p className="text-[#495057]">{packageData.type} Pack</p>
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 bg-[#f1f9fe] rounded-xl px-4 py-3">
+                  <CalendarIcon className="w-5 h-5 text-[#495057]" />
+                  <p className="text-[#495057]">{packageData.dates}</p>
+                </div>
+              </div>
             </div>
-            <span className="ml-2 text-gray-700 hidden sm:inline">Destination</span>
           </div>
-          <div className="w-12 sm:w-24 h-0.5 bg-gray-300"></div>
-          <div className="flex items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              currentStep === 2 ? 'bg-[#117BB8] text-white shadow-lg' : 'bg-gray-200 text-gray-500'
-            }`}>
-              2
+        )}
+        
+        {/* Step Indicator - Only for regular booking */}
+        {!isUmrahBooking && (
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                currentStep === 1 ? 'bg-[#117BB8] text-white shadow-lg' : 'bg-white text-[#117BB8] border-2 border-[#117BB8]'
+              }`}>
+                {currentStep > 1 ? <CheckCircle2 className="w-6 h-6" /> : '1'}
+              </div>
+              <span className="ml-2 text-gray-700 hidden sm:inline">Destination</span>
             </div>
-            <span className="ml-2 text-gray-700 hidden sm:inline">Information</span>
+            <div className="w-12 sm:w-24 h-0.5 bg-gray-300"></div>
+            <div className="flex items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                currentStep === 2 ? 'bg-[#117BB8] text-white shadow-lg' : 'bg-gray-200 text-gray-500'
+              }`}>
+                2
+              </div>
+              <span className="ml-2 text-gray-700 hidden sm:inline">Information</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       
       <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-gray-100">
@@ -328,60 +372,86 @@ export default function BookingForm() {
           <form onSubmit={handleNextStep} className="space-y-6">
             <div className="mb-8">
               <h2 className="text-[#117BB8] mb-2">Destination Details</h2>
-              <p className="text-gray-500">Tell us where you'd like to go</p>
+              <p className="text-gray-500">
+                {isUmrahBooking ? 'Your journey to the holy city' : "Tell us where you'd like to go"}
+              </p>
             </div>
 
-            {/* Row 1: Country and City */}
-            <div className="grid sm:grid-cols-2 gap-6">
-              <div className="relative">
-                <label className="block text-gray-700 mb-2">
-                  Destination Country <span className="text-red-500">*</span>
-                </label>
-                <MapPin className="absolute left-4 bottom-5 text-gray-400 w-5 h-5 pointer-events-none" />
-                <select
-                  value={destinationCountry}
-                  onChange={(e) => handleCountryChange(e.target.value)}
-                  className={`w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border ${
-                    errors.destinationCountry ? 'border-red-500' : 'border-gray-200'
-                  } text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#117BB8] focus:border-transparent focus:bg-white transition-all`}
-                >
-                  <option value="">Select country</option>
-                  <option value="france">France</option>
-                  <option value="spain">Spain</option>
-                  <option value="italy">Italy</option>
-                  <option value="greece">Greece</option>
-                  <option value="turkey">Turkey</option>
-                  <option value="morocco">Morocco</option>
-                </select>
-                {errors.destinationCountry && (
-                  <p className="text-red-500 text-sm mt-2">{errors.destinationCountry}</p>
-                )}
+            {/* Destination Display - Conditional based on Umrah or regular booking */}
+            {isUmrahBooking ? (
+              // Locked Destination Display for Umrah
+              <div className="bg-gradient-to-br from-blue-50 to-gray-50 rounded-xl p-6 border-2 border-[#117BB8]">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-[#117BB8]" />
+                    <div>
+                      <p className="text-sm text-gray-600">Destination Country</p>
+                      <p className="text-gray-800">{destinationCountry}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-[#117BB8]" />
+                    <div>
+                      <p className="text-sm text-gray-600">Destination City</p>
+                      <p className="text-gray-800">{destinationCity}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <div className="relative">
-                <label className="block text-gray-700 mb-2">
-                  Destination City <span className="text-red-500">*</span>
-                </label>
-                <MapPin className="absolute left-4 bottom-5 text-gray-400 w-5 h-5 pointer-events-none" />
-                <select
-                  value={destinationCity}
-                  onChange={(e) => handleCityChange(e.target.value)}
-                  className={`w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border ${
-                    errors.destinationCity ? 'border-red-500' : 'border-gray-200'
-                  } text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#117BB8] focus:border-transparent focus:bg-white transition-all`}
-                >
-                  <option value="">Select city</option>
-                  {availableCities.map(city => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-                {errors.destinationCity && (
-                  <p className="text-red-500 text-sm mt-2">{errors.destinationCity}</p>
-                )}
+            ) : (
+              // Editable Country and City for regular bookings
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div className="relative">
+                  <label className="block text-gray-700 mb-2">
+                    Destination Country <span className="text-red-500">*</span>
+                  </label>
+                  <MapPin className="absolute left-4 bottom-5 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <select
+                    value={destinationCountry}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                    className={`w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border ${
+                      errors.destinationCountry ? 'border-red-500' : 'border-gray-200'
+                    } text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#117BB8] focus:border-transparent focus:bg-white transition-all`}
+                  >
+                    <option value="">Select country</option>
+                    <option value="france">France</option>
+                    <option value="spain">Spain</option>
+                    <option value="italy">Italy</option>
+                    <option value="greece">Greece</option>
+                    <option value="turkey">Turkey</option>
+                    <option value="morocco">Morocco</option>
+                  </select>
+                  {errors.destinationCountry && (
+                    <p className="text-red-500 text-sm mt-2">{errors.destinationCountry}</p>
+                  )}
+                </div>
+                
+                <div className="relative">
+                  <label className="block text-gray-700 mb-2">
+                    Destination City <span className="text-red-500">*</span>
+                  </label>
+                  <MapPin className="absolute left-4 bottom-5 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <select
+                    value={destinationCity}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    className={`w-full pl-12 pr-4 py-4 rounded-xl bg-gray-50 border ${
+                      errors.destinationCity ? 'border-red-500' : 'border-gray-200'
+                    } text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#117BB8] focus:border-transparent focus:bg-white transition-all`}
+                  >
+                    <option value="">Select city</option>
+                    {availableCities.map(city => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.destinationCity && (
+                    <p className="text-red-500 text-sm mt-2">{errors.destinationCity}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Row 2: Hotel and Options */}
             <div className="grid sm:grid-cols-2 gap-6">
@@ -486,13 +556,17 @@ export default function BookingForm() {
         {/* Step 2: Payer Information */}
         {currentStep === 2 && (
           <div>
+            {!isUmrahBooking && (
+              <div className="mb-8">
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="text-[#117BB8] hover:text-[#0f6da4] transition-colors flex items-center gap-2 mb-4"
+                >
+                  ← Back to destination details
+                </button>
+              </div>
+            )}
             <div className="mb-8">
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="text-[#117BB8] hover:text-[#0f6da4] transition-colors flex items-center gap-2 mb-4"
-              >
-                ← Back to destination details
-              </button>
               <h2 className="text-[#117BB8] mb-2">Payer Information</h2>
               <p className="text-gray-500">Provide details about the person making the booking</p>
             </div>
@@ -834,16 +908,18 @@ export default function BookingForm() {
 
               {/* Submit Button */}
               <div className="pt-8 flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-5 rounded-xl transition-all"
-                >
-                  ← Back
-                </button>
+                {!isUmrahBooking && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(1)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-5 rounded-xl transition-all"
+                  >
+                    ← Back
+                  </button>
+                )}
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-[#117BB8] to-[#0f6da4] hover:from-[#0f6da4] hover:to-[#0d5f92] text-white py-5 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className={`${isUmrahBooking ? 'w-full' : 'flex-1'} bg-gradient-to-r from-[#117BB8] to-[#0f6da4] hover:from-[#0f6da4] hover:to-[#0d5f92] text-white py-5 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5`}
                 >
                   Submit Booking
                 </button>
@@ -854,4 +930,28 @@ export default function BookingForm() {
       </div>
     </div>
   );
+
+  // Return modal wrapper for Umrah, regular content for standard form
+  if (isUmrahBooking) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+        <div className="min-h-screen px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Close Button */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={onClose}
+                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            <FormContent />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <FormContent />;
 }

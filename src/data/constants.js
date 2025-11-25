@@ -41,7 +41,7 @@ export const DESTINATIONS = [
 export const NAV_LINKS = [
   { name: 'Home', href: '/' },
   { name: 'Destinations', href: '/destinations' },
-  { name: 'Umrah', href: '#umrah' },
+  { name: 'Umrah', href: '/umrah' },
   { name: 'Group trip', href: '#group-trip' },
   { name: 'Branches', href: '#branches' },
 ];
@@ -57,7 +57,7 @@ export const FOOTER_SECTIONS = [
   {
     title: 'Discover',
     links: [
-      { name: 'Umrah & hadj', href: '#umrah' },
+      { name: 'Umrah & hadj', href: '/umrah' },
       { name: 'Popular destination', href: '/destinations' },
       { name: 'Group trips', href: '#group-trips' },
       { name: 'Our offers', href: '#offers' },
